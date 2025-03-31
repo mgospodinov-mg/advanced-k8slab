@@ -1,0 +1,6 @@
+opentofu_advk8slab/.terraform
+opentofu_advk8slab/.terraform.lock.hcl
+opentofu_advk8slab/terraform.tfstate
+opentofu_advk8slab/terraform.tfstate.backup
+opentofu_advk8slab/sshkeys/k8slab
+opentofu_advk8slab/sshkeys/k8slab.pem

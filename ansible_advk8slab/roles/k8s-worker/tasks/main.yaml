@@ -1,0 +1,37 @@
+- name: Check if the master node port is open
+  ansible.builtin.wait_for:
+    host: "{{ hostvars['k8scp']['hostname_fact'] }}"
+    port: 6443
+    state: started
+
+- name: Create empty file for kubeadmin-worker node
+  ansible.builtin.copy:
+    content: ""
+    dest: /etc/kubernetes/kubeadm-node.yaml
+    force: false
+    mode: preserve
+
+- name: Configure Kubernetes cluster
+  ansible.builtin.blockinfile:
+    path: /etc/kubernetes/kubeadm-node.yaml
+    block: |
+      apiVersion: kubeadm.k8s.io/v1beta3
+      kind: JoinConfiguration
+      discovery:
+        bootstrapToken:
+          token: "{{ hostvars['k8scp']['token_fact'] }}"
+          apiServerEndpoint: "{{ hostvars['k8scp']['hostname_fact'] }}:6443"
+          caCertHashes:
+            - "sha256:{{ hostvars['k8scp']['cert_hash_fact'] }}"
+      nodeRegistration:
+        name: "{{ ansible_fqdn }}"
+        kubeletExtraArgs:
+          cloud-provider: external
+
+- name: Join the cluster
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      kubeadm join --config=/etc/kubernetes/kubeadm-node.yaml
+    executable: /bin/bash
+  changed_when: false

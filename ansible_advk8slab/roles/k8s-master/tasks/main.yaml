@@ -1,0 +1,157 @@
+- name: Set K8S control-plane node hostname fact
+  ansible.builtin.set_fact:
+    hostname_fact: "{{ ansible_fqdn }}"
+  when: inventory_hostname == "k8scp"
+
+- name: Create empty file for kubeadmin
+  ansible.builtin.copy:
+    content: ""
+    dest: /etc/kubernetes/kubeadm-config.yaml
+    force: false
+    mode: preserve
+
+- name: Configure Kubernetes cluster
+  ansible.builtin.blockinfile:
+    path: /etc/kubernetes/kubeadm-config.yaml
+    block: |
+      apiVersion: kubeadm.k8s.io/v1beta3
+      kind: ClusterConfiguration
+      kubernetesVersion: "{{ kubernetes_ver }}"
+      controlPlaneEndpoint: "{{ ansible_fqdn }}:6443"
+      networking:
+        podSubnet: 192.168.0.0/16
+      apiServer:
+        extraArgs:
+          cloud-provider: external
+      controllerManager:
+        extraArgs:
+          cloud-provider: external
+
+- name: Initialize the Kubernetes cluster
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      kubeadm init --config=/etc/kubernetes/kubeadm-config.yaml --node-name="{{ ansible_fqdn }}"
+    executable: /bin/bash
+  changed_when: false
+
+- name: Create .kube directory
+  become: true
+  become_user: ubuntu
+  ansible.builtin.file:
+    path: $HOME/.kube
+    state: directory
+    mode: "0755"
+
+- name: Copy admin.conf to .kube directory
+  ansible.builtin.copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /home/ubuntu/.kube/config
+    remote_src: true
+    mode: preserve
+    owner: ubuntu
+
+- name: Clone the AWS Cloud Controller Manager
+  ansible.builtin.git:
+    repo: https://github.com/kubernetes/cloud-provider-aws.git
+    dest: "/home/ubuntu/cloud-provider-aws"
+    version: "{{ cloud_aws_ver }}"
+  changed_when: false
+
+- name: Deploy AWS Cloud Controller
+  become: true
+  become_user: ubuntu
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      kubectl create -k .
+    executable: /bin/bash
+    chdir: "/home/ubuntu/cloud-provider-aws/examples/existing-cluster/base/"
+  changed_when: false
+
+- name: Intall package "bash-completion"
+  ansible.builtin.apt:
+    name: bash-completion
+    state: present
+
+- name: Add the completion in the ".bashrc" file
+  become: true
+  become_user: ubuntu
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      echo "source <(kubectl completion bash)" >> $HOME/.bashrc
+    executable: /bin/bash
+  changed_when: false
+
+- name: Download Helm installation script
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+    dest: /tmp/get-helm.sh
+    mode: "0700"
+
+- name: Run Helm installation script
+  ansible.builtin.command:
+    cmd: /tmp/get-helm.sh
+  changed_when: false
+
+- name: Generate cilium.yaml
+  ansible.builtin.shell:
+    cmd: |
+        set -o pipefail
+        helm repo add cilium https://helm.cilium.io/
+        helm repo update
+        helm template cilium cilium/cilium --version "{{ cilium_ver }}" --namespace kube-system > /etc/kubernetes/cilium-cni.yaml
+    executable: /bin/bash
+  changed_when: false
+
+- name: Set the pod network in Cilium
+  ansible.builtin.replace:
+    path: /etc/kubernetes/cilium-cni.yaml
+    after: 'cluster-pool-ipv4-cidr:'
+    regexp: '["][0-9]+\.[0-9]+\.[0-9]+\.[0-9]+\/[0-9]["]+$'
+    replace: '"192.168.0.0/16"'
+
+- name: Install pod network
+  become: true
+  become_user: ubuntu
+  ansible.builtin.shell:
+    cmd: |
+        set -o pipefail
+        kubectl apply -f /etc/kubernetes/cilium-cni.yaml
+    executable: /bin/bash
+  changed_when: false
+
+- name: Extract CERT_HASH
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
+    executable: /bin/bash
+  register: cert_hash
+  changed_when: false
+
+- name: Extract token
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      kubeadm token list -o json | jq -r '.token' | head -1
+    executable: /bin/bash
+  register: token
+  changed_when: false
+  tags: test
+
+- name: Set cert_hash as ansible.builtin.set_fact
+  ansible.builtin.set_fact:
+    cert_hash_fact: "{{ cert_hash.stdout_lines[0] }}"
+
+- name: Set token_hash as ansible.builtin.set_fact
+  ansible.builtin.set_fact:
+    token_fact: "{{ token.stdout_lines[0] }}"
+
+- name: Allow pod scheduling on the control plane
+  become_user: ubuntu
+  ansible.builtin.command:
+    cmd: kubectl taint node "{{ ansible_fqdn }}" node-role.kubernetes.io/control-plane:NoSchedule-
+  when: kubernetes_schedule_pods_control_plane | bool
+  changed_when: false

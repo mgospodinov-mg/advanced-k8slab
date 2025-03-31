@@ -1,0 +1,11 @@
+[masters]
+k8scp ansible_host=${master_ip}
+[workers]
+%{ for index,ip in worker_ip ~}
+worker${index+1} ansible_host=${ip}
+%{ endfor ~}
+[all:vars]
+ansible_user = ubuntu
+ansible_port = 22
+ansible_ssh_private_key_file = ../opentofu_advk8slab/sshkeys/k8slab
+ansible_ssh_host_key_checking = false
