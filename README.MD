@@ -38,4 +38,4 @@ ansible-playbook -i inventory.ini advk8s-playbook.yaml -v
 
 By default the playbook will install Kubernetes 1.30.1
 
-To install a different Kubernetes version, modify the variables within the variables.yaml file.
+To install a different Kubernetes version, modify the variables.
