@@ -341,3 +341,26 @@ resource "aws_iam_policy" "csi-policy" {
   ]
 })
 }
+
+resource "aws_iam_role" "k8slab-csi-role" {
+  name = "k8slab-csi-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [ 
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Sid = ""
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "k8slab-csi-role-attachment" {
+  role = aws_iam_role.k8slab-csi-role.name
+  policy_arn = aws_iam_policy.csi-policy.arn  
+}
