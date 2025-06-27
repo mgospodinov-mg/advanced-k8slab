@@ -27,6 +27,10 @@ resource "aws_instance" "master" {
     volume_size = 20
   }  
   
+  metadata_options {
+    http_put_response_hop_limit = 3
+  }
+
   tags = {
     Name = "Master node"
     "kubernetes.io/cluster/kubernetes" = "owned"
@@ -46,6 +50,10 @@ resource "aws_instance" "worker" {
   root_block_device {
     volume_size = 20
   }  
+
+  metadata_options {
+    http_put_response_hop_limit = 3
+  }
 
   tags = {
     Name = "Worker${count.index + 1} node"
