@@ -364,3 +364,8 @@ resource "aws_iam_role_policy_attachment" "k8slab-csi-role-attachment" {
   role = aws_iam_role.k8slab-csi-role.name
   policy_arn = aws_iam_policy.csi-policy.arn  
 }
+
+resource "aws_iam_instance_profile" "k8slab-csi-profile" {
+  name = "k8slab-csi-profile"
+  role = aws_iam_role.k8slab-csi-role.name
+}
