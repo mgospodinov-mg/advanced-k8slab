@@ -69,6 +69,16 @@
     chdir: "/home/ubuntu/cloud-provider-aws/examples/existing-cluster/base/"
   changed_when: false
 
+- name: Deploy AWS EBS CSI driver
+  become: true
+  become_user: ubuntu
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      kubectl apply -k "github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.45"
+    executable: /bin/bash
+  changed_when: false
+
 - name: Intall package "bash-completion"
   ansible.builtin.apt:
     name: bash-completion
