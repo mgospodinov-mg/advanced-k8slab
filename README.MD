@@ -39,3 +39,20 @@ ansible-playbook -i inventory.ini advk8s-playbook.yaml -v
 By default the playbook will install Kubernetes 1.30.1
 
 To install a different Kubernetes version, modify the variables.
+
+## Create a StorageClass
+
+This is  an example; feel free to modify it as you see fit.
+
+```
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ebs-sc
+provisioner: ebs.csi.aws.com
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+parameters:
+  type: gp3  
+  fsType: ext4
+```
