@@ -160,7 +160,7 @@ resource "aws_iam_policy" "csi-policy" {
   name        = "k8slab-iam-csi-policy"
   description = "iam-csi-policy"
 
-  policy = file("./policy/csi-policy.json")
+  policy = file("iam-policies/csi-policy.json")
 }
 
 resource "aws_iam_role" "k8slab-csi-role" {
