@@ -165,3 +165,26 @@
     cmd: kubectl taint node "{{ ansible_fqdn }}" node-role.kubernetes.io/control-plane:NoSchedule-
   when: kubernetes_schedule_pods_control_plane | bool
   changed_when: false
+
+- name: Add metrics-server Helm repo
+  become_user: ubuntu
+  ansible.builtin.command:
+    cmd: helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
+  register: add_repo
+  changed_when: false
+
+- name: Update Helm repos
+  become_user: ubuntu
+  ansible.builtin.command:
+    cmd: helm repo update
+  register: helm_update
+  changed_when: "'Successfully got an update' in helm_update.stdout"
+
+- name: Install Metrics Server using Helm with kubeconfig
+  become_user: ubuntu
+  ansible.builtin.command:
+    cmd: >
+      helm upgrade --install metrics-server metrics-server/metrics-server
+      --namespace kube-system
+      --set args={--kubelet-insecure-tls,--kubelet-preferred-address-types=InternalIP\,Hostname\,ExternalIP}
+  changed_when: false

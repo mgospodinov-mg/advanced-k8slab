@@ -1,5 +1,5 @@
 # Advanced K8SLab
-The primary objective of this project is to establish a Kubernetes cluster within the AWS environment. The implementation will involve deploying the `cloud-provider-aws` and `aws-ebs-csi-driver`. The AWS cloud provider provides the interface between a Kubernetes cluster and AWS service APIs. The Amazon Elastic Block Store Container Storage Interface (CSI) Driver provides a CSI interface used by Container Orchestrators to manage the lifecycle of Amazon EBS volumes.
+The primary objective of this project is to establish a Kubernetes cluster within the AWS environment. The implementation will involve deploying the `cloud-provider-aws`, `aws-ebs-csi-driver` and `metrics-server`. The AWS cloud provider provides the interface between a Kubernetes cluster and AWS service APIs. The Amazon Elastic Block Store Container Storage Interface (CSI) Driver provides a CSI interface used by Container Orchestrators to manage the lifecycle of Amazon EBS volumes. The Kubernetes Metrics Server is a cluster-wide aggregator of resource usage data such as CPU and memory.
 
 ## Prerequisite
 You should have AWS account created. Install and configure the AWS CLI. OpenToFu and Ansible are also necessary.
