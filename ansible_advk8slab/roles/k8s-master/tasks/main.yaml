@@ -58,7 +58,6 @@
     repo: https://github.com/kubernetes/cloud-provider-aws.git
     dest: "/home/ubuntu/cloud-provider-aws"
     version: "{{ cloud_aws_ver }}"
-  changed_when: false
 
 - name: Deploy AWS Cloud Controller
   become: true
