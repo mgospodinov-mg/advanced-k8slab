@@ -85,15 +85,14 @@
     name: bash-completion
     state: present
 
-- name: Add the completion in the ".bashrc" file
+- name: Enable kubectl bash completion for ubuntu user
   become: true
   become_user: ubuntu
-  ansible.builtin.shell:
-    cmd: |
-      set -o pipefail
-      echo "source <(kubectl completion bash)" >> $HOME/.bashrc
-    executable: /bin/bash
-  changed_when: false
+  ansible.builtin.lineinfile:
+    path: /home/ubuntu/.bashrc
+    line: 'source <(kubectl completion bash)'
+    insertafter: EOF
+    state: present
 
 - name: Download Helm installation script
   ansible.builtin.get_url:
@@ -106,12 +105,20 @@
     cmd: /tmp/get-helm.sh
   changed_when: false
 
+- name: Add Cilium Helm repository
+  ansible.builtin.command: helm repo add cilium https://helm.cilium.io/
+  register: cilium_repo_add
+  failed_when: cilium_repo_add.rc != 0 and '"exists" not in cilium_repo_add.stderr'
+  changed_when: '"has been added" in cilium_repo_add.stdout'
+
+- name: Update Helm repositories
+  ansible.builtin.command: helm repo update
+  changed_when: false
+
 - name: Generate cilium.yaml
   ansible.builtin.shell:
     cmd: |
         set -o pipefail
-        helm repo add cilium https://helm.cilium.io/
-        helm repo update
         helm template cilium cilium/cilium --version "{{ cilium_ver }}" --namespace kube-system > /etc/kubernetes/cilium-cni.yaml
     executable: /bin/bash
   changed_when: false
