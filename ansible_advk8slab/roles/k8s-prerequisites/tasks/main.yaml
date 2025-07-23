@@ -78,7 +78,8 @@
 - name: Add containerd configuration
   ansible.builtin.shell:
     cmd: containerd config default > /etc/containerd/config.toml
-  changed_when: false
+    creates: /etc/containerd/config.toml
+    executable: /bin/bash
 
 - name: Configuring Systemd cgroup driver for containerd
   ansible.builtin.lineinfile:
