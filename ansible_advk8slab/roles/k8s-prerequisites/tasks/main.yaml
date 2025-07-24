@@ -106,7 +106,7 @@
       set -o pipefail
       curl -fsSL https://pkgs.k8s.io/core:/stable:/v"{{ kuberepo_ver }}"/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
     executable: /bin/bash
-  changed_when: false
+    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
 - name: Add Kubernetes APT repository
   ansible.builtin.apt_repository:
