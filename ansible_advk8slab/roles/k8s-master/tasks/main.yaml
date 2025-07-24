@@ -3,15 +3,13 @@
     hostname_fact: "{{ ansible_fqdn }}"
   when: inventory_hostname == "k8scp"
 
-- name: Create empty file for kubeadmin
-  ansible.builtin.file:
-    path: /etc/kubernetes/kubeadm-config.yaml
-    state: touch
-    mode: '0644'
-
 - name: Configure Kubernetes cluster
   ansible.builtin.blockinfile:
     path: /etc/kubernetes/kubeadm-config.yaml
+    create: true
+    mode: '0644'
+    owner: root
+    group: root
     block: |
       apiVersion: kubeadm.k8s.io/v1beta3
       kind: ClusterConfiguration
@@ -40,7 +38,7 @@
   become: true
   become_user: ubuntu
   ansible.builtin.file:
-    path: $HOME/.kube
+    path: /home/ubuntu/.kube
     state: directory
     mode: "0755"
 
@@ -136,7 +134,9 @@
   ansible.builtin.shell:
     cmd: |
       set -o pipefail
-      openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
+      openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt \
+      | openssl rsa -pubin -outform der 2>/dev/null \
+      | openssl dgst -sha256 -hex | sed 's/^.* //'
     executable: /bin/bash
   register: cert_hash
   changed_when: false
@@ -149,15 +149,14 @@
     executable: /bin/bash
   register: token
   changed_when: false
-  tags: test
 
 - name: Set cert_hash as ansible.builtin.set_fact
   ansible.builtin.set_fact:
-    cert_hash_fact: "{{ cert_hash.stdout_lines[0] }}"
+    cert_hash_fact: "{{ cert_hash.stdout_lines[0] | trim }}"
 
 - name: Set token_hash as ansible.builtin.set_fact
   ansible.builtin.set_fact:
-    token_fact: "{{ token.stdout_lines[0] }}"
+    token_fact: "{{ token.stdout_lines[0] | trim }}"
 
 - name: Allow pod scheduling on the control plane
   become_user: ubuntu
@@ -187,4 +186,6 @@
       helm upgrade --install metrics-server metrics-server/metrics-server
       --namespace kube-system
       --set args={--kubelet-insecure-tls,--kubelet-preferred-address-types=InternalIP\,Hostname\,ExternalIP}
+  environment:
+    KUBECONFIG: /home/ubuntu/.kube/config
   changed_when: false

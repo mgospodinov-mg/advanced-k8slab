@@ -4,15 +4,13 @@
     port: 6443
     state: started
 
-- name: Create empty file for kubeadmin-worker node
-  ansible.builtin.file:
-    path: /etc/kubernetes/kubeadm-node.yaml
-    state: touch
-    mode: '0644'
-
 - name: Configure Kubernetes cluster
   ansible.builtin.blockinfile:
     path: /etc/kubernetes/kubeadm-node.yaml
+    create: true
+    mode: '0644'
+    owner: root
+    group: root
     block: |
       apiVersion: kubeadm.k8s.io/v1beta3
       kind: JoinConfiguration
