@@ -16,7 +16,7 @@
       apiVersion: kubeadm.k8s.io/v1beta3
       kind: ClusterConfiguration
       kubernetesVersion: "{{ kubernetes_ver }}"
-      controlPlaneEndpoint: "{{ ansible_fqdn }}:6443"
+      controlPlaneEndpoint: "{{ hostvars['k8scp'].ansible_host }}:6443"
       networking:
         podSubnet: 192.168.0.0/16
       apiServer:
