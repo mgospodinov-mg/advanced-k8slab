@@ -4,11 +4,10 @@
   when: inventory_hostname == "k8scp"
 
 - name: Create empty file for kubeadmin
-  ansible.builtin.copy:
-    content: ""
-    dest: /etc/kubernetes/kubeadm-config.yaml
-    force: false
-    mode: preserve
+  ansible.builtin.file:
+    path: /etc/kubernetes/kubeadm-config.yaml
+    state: touch
+    mode: '0644'
 
 - name: Configure Kubernetes cluster
   ansible.builtin.blockinfile:
@@ -62,23 +61,19 @@
 - name: Deploy AWS Cloud Controller
   become: true
   become_user: ubuntu
-  ansible.builtin.shell:
-    cmd: |
-      set -o pipefail
-      kubectl create -k .
-    executable: /bin/bash
+  ansible.builtin.command: kubectl apply -k .
+  args:
     chdir: "/home/ubuntu/cloud-provider-aws/examples/existing-cluster/base/"
-  changed_when: false
+  register: aws_ccm_output
+  changed_when: "'configured' in aws_ccm_output.stdout or 'created' in aws_ccm_output.stdout"
 
 - name: Deploy AWS EBS CSI driver
   become: true
   become_user: ubuntu
-  ansible.builtin.shell:
-    cmd: |
-      set -o pipefail
-      kubectl apply -k "github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.45"
-    executable: /bin/bash
-  changed_when: false
+  ansible.builtin.command: >
+    kubectl apply -k "github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.45"
+  register: ebs_csi_output
+  changed_when: "'created' in ebs_csi_output.stdout or 'configured' in ebs_csi_output.stdout"
 
 - name: Intall package "bash-completion"
   ansible.builtin.apt:
@@ -133,12 +128,9 @@
 - name: Install pod network
   become: true
   become_user: ubuntu
-  ansible.builtin.shell:
-    cmd: |
-        set -o pipefail
-        kubectl apply -f /etc/kubernetes/cilium-cni.yaml
-    executable: /bin/bash
-  changed_when: false
+  ansible.builtin.command: kubectl apply -f /etc/kubernetes/cilium-cni.yaml
+  register: cilium_apply_output
+  changed_when: "'created' in cilium_apply_output.stdout or 'configured' in cilium_apply_output.stdout"
 
 - name: Extract CERT_HASH
   ansible.builtin.shell:

@@ -5,11 +5,10 @@
     state: started
 
 - name: Create empty file for kubeadmin-worker node
-  ansible.builtin.copy:
-    content: ""
-    dest: /etc/kubernetes/kubeadm-node.yaml
-    force: false
-    mode: preserve
+  ansible.builtin.file:
+    path: /etc/kubernetes/kubeadm-node.yaml
+    state: touch
+    mode: '0644'
 
 - name: Configure Kubernetes cluster
   ansible.builtin.blockinfile:
