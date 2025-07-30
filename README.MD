@@ -40,6 +40,14 @@ By default the playbook will install Kubernetes 1.30.1
 
 To install a different Kubernetes version, modify the variables.
 
+### Connect to the Kuberntes cluster
+
+Connect to the control plane using ssh. Go to the <path>/opentofu_k8slab/sshkeys directory
+
+```
+ssh -i <sshkey> ubuntu@<control plane public ip>
+```
+
 ## Create a StorageClass
 
 This is  an example; feel free to modify it as you see fit.
