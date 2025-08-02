@@ -189,3 +189,28 @@
   environment:
     KUBECONFIG: /home/ubuntu/.kube/config
   changed_when: false
+
+- name: Install the Gateway API resources
+  become_user: ubuntu
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      kubectl kustomize "https://github.com/nginx/nginx-gateway-fabric/config/crd/gateway-api/standard?ref=v2.0.2" \
+      | kubectl apply -f -
+    executable: /bin/bash
+  register: apply_output
+  changed_when: "'created' in apply_output.stdout"
+
+- name: Deploy the NGINX Gateway Fabric CRDs
+  become_user: ubuntu
+  ansible.builtin.command:
+    cmd: kubectl apply --server-side -f https://raw.githubusercontent.com/nginx/nginx-gateway-fabric/v2.0.2/deploy/crds.yaml
+  register: applycrd_output
+  changed_when: "'created' in applycrd_output"
+
+- name: Deploy NGINX Gateway Fabric
+  become_user: ubuntu
+  ansible.builtin.command:
+    cmd: kubectl apply -f https://raw.githubusercontent.com/nginx/nginx-gateway-fabric/v2.0.2/deploy/default/deploy.yaml
+  register: applydeploy_output
+  changed_when: "'created' in applydeploy_output.stdout"
