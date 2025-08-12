@@ -56,11 +56,14 @@ This is  an example; feel free to modify it as you see fit.
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
   name: ebs-sc
 provisioner: ebs.csi.aws.com
 volumeBindingMode: WaitForFirstConsumer
 reclaimPolicy: Delete
 parameters:
-  type: gp3  
+  type: gp3
   fsType: ext4
+
 ```
